@@ -3,7 +3,7 @@
         "do_sample": true,
         "add_bos_token": true,
         "ban_eos_token": false,
-        "max_new_tokens": 50,
+        "max_new_tokens": 25,
         "temperature": 0.5,
         "top_p": 0.9,
         "typical_p": 1,
@@ -17,5 +17,5 @@
         "length_penalty": 1,
         "seed": -1,
         "truncation_length": 2048,
-        "custom_stopping_strings": []
+        "custom_stopping_strings": ["### Human:"]
     }

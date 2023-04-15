@@ -13,6 +13,8 @@ params = read_json("params.json")
 print(params)
 config = read_json("config.json")
 print(config)
+preprompts = read_json("preprompt.json")
+#print(preprompts)
 MM_URL = config["MM_URL"]
 MM_TOKEN = config["MM_TOKEN"]
 MM_WEBSOCKET_URL = f"{MM_URL}/api/v4/websocket"
@@ -54,8 +56,42 @@ async def handle_message(message_data):
     channel_id = message_data["channel_id"]
     message_text = message_data["message"]
 
-    response_text = await get_result(message_text)
-    await send_message(channel_id, response_text)
+    if message_text[0] == "€" or message_text[0] == "\\":
+        command = message_text[1:].split()
+        print(command)
+        if command[0] == "set":
+            print(command[0])
+            if command[1] in params:
+                if isinstance(params[command[1]], int):
+                    print("is int")
+                    try:
+                        converted_value = int(command[2])
+                    except ValueError:
+                        return
+                elif isinstance(params[command[1]], float):
+                    print("is float")
+                    try:
+                        converted_value = float(command[2])
+                    except ValueError:
+                        return
+                elif isinstance(params[command[1]], bool):
+                    print("is bool")
+                    try:
+                        converted_value = bool(command[2])
+                    except ValueError:
+                        return
+                params[command[1]] = converted_value
+                await send_message(channel_id, f"`{command[1]} set to {params[command[1]]}`")
+        elif command[0] == "get":
+            if command[1] in params:
+                await send_message(channel_id, f"`{command[1]} == {params[command[1]]} {type(params[command[1]])}`")
+        elif command[0] == "getparams":
+            await send_message(channel_id, "`"+str(params)+"`")
+
+
+    else:
+        response_text = await get_result(message_text, sender_id)
+        await send_message(channel_id, response_text)
 
 async def run(context):
     server = "localhost"
@@ -94,15 +130,25 @@ async def run(context):
 #    greeting = "Hello there! How can I help you today? Do you have any questions or topics you'd like to discuss?"
 #    prompt = input("Prompt: ")
 #    guide = f"Common sense question and answers \n Question: {prompt} Factual answer:"
+
 #
-async def get_result(message):
-    async for response in run(message):
+async def get_result(message, author):
+#    char_greeting = f"{preprompts['char_name']}: {preprompts['char_greeting']}"
+#    example_dialogue = preprompts['example_dialogue'].replace("{{char}}", preprompts["char_name"])
+#    example_dialogue = example_dialogue.replace("{{user}}", "Question")
+#    context = f"{preprompts['char_persona']} \n{char_greeting} {example_dialogue} \nQuestion: {message} \n{preprompts['char_name']}:"
+    context = f"Below is an instruction that describes a task. Write a response that appropriately completes the request. \n### Human: {message}\n### Assistant:"
+    async for response in run(context):
         # Print intermediate steps
-        answer = response.replace(message, "", 1)
+        answer = response.replace(context, "", 1)
         print(answer)
     # Print final result
-    print(response)
-    return response
+#    print(answer)
+    if "### Human" in answer:
+        answer = answer.split("### Human")[0]
+    if answer[0] == " ":
+        answer = answer[1:]
+    return answer
 
 
 async def main():
@@ -116,8 +162,12 @@ async def main():
             event = message_data.get("event")
 
             if event == "posted":
-                post_data = json.loads(message_data["data"]["post"])
-                await handle_message(post_data)
+                post = json.loads(message_data["data"]["post"])
+                if post["channel_id"] == config["CHANNEL_ID"]:
+                    if post["type"] == "":
+                        if not post.get("props", {}).get("from_bot", False):
+                            post_data = json.loads(message_data["data"]["post"])
+                            await handle_message(post_data)
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
