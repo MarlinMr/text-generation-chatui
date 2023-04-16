@@ -10,9 +10,9 @@ def read_json(config_file):
         return json.load(file)
 
 params = read_json("params.json")
-print(params)
+#print(params)
 config = read_json("config.json")
-print(config)
+#print(config)
 preprompts = read_json("preprompt.json")
 #print(preprompts)
 MM_URL = config["MM_URL"]
@@ -34,7 +34,7 @@ async def get_user_id():
             user_data = await response.json()
             return user_data["id"]
 
-async def send_message(channel_id, message):
+async def send_message(channel_id, message, root_id):
     headers = {
         "Authorization": f"Bearer {MM_TOKEN}",
         "Content-Type": "application/json",
@@ -42,10 +42,29 @@ async def send_message(channel_id, message):
     data = {
         "channel_id": channel_id,
         "message": message,
+        "root_id": root_id
     }
     async with aiohttp.ClientSession() as session:
         async with session.post(f"{MM_URL}/api/v4/posts", headers=headers, json=data) as response:
             pass
+
+async def get_message(post_id):
+    headers = {
+        "Authorization": f"Bearer {MM_TOKEN}"
+    }
+    data = {
+        "direction": "down"
+    }
+    url = f"{MM_URL}/api/v4/posts/{post_id}/thread"
+    #print(url)
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=headers, json=data) as response:
+            #print(response)
+            data = await response.read()
+            data = data.decode()
+            data = json.loads(data)
+            sorted_posts = sorted(data["posts"].values(), key=lambda post: post["create_at"])
+            return sorted_posts
 
 async def handle_message(message_data):
     sender_id = message_data["user_id"]
@@ -55,6 +74,13 @@ async def handle_message(message_data):
 
     channel_id = message_data["channel_id"]
     message_text = message_data["message"]
+    #print(message_data)
+    if message_data["root_id"] == "":
+        root_id = message_data["id"]
+        message_thread = await get_message(message_data["id"])
+    else:
+        root_id = message_data["root_id"]
+        message_thread = await get_message(message_data["root_id"])
 
     if message_text[0] == "€" or message_text[0] == "\\":
         command = message_text[1:].split()
@@ -81,17 +107,16 @@ async def handle_message(message_data):
                     except ValueError:
                         return
                 params[command[1]] = converted_value
-                await send_message(channel_id, f"`{command[1]} set to {params[command[1]]}`")
+                await send_message(channel_id, f"`{command[1]} set to {params[command[1]]}`",root_id)
         elif command[0] == "get":
             if command[1] in params:
-                await send_message(channel_id, f"`{command[1]} == {params[command[1]]} {type(params[command[1]])}`")
+                await send_message(channel_id, f"`{command[1]} == {params[command[1]]} {type(params[command[1]])}`",root_id)
         elif command[0] == "getparams":
-            await send_message(channel_id, "`"+str(params)+"`")
-
+            await send_message(channel_id, "`"+str(params)+"`", root_id)
 
     else:
-        response_text = await get_result(message_text, sender_id)
-        await send_message(channel_id, response_text)
+        response_text = await get_result(message_text, sender_id, message_thread)
+        await send_message(channel_id, response_text, root_id)
 
 async def run(context):
     server = "localhost"
@@ -125,19 +150,27 @@ async def run(context):
                     if (content["msg"] == "process_completed"):
                         break
 
-
-
 #    greeting = "Hello there! How can I help you today? Do you have any questions or topics you'd like to discuss?"
 #    prompt = input("Prompt: ")
 #    guide = f"Common sense question and answers \n Question: {prompt} Factual answer:"
 
 #
-async def get_result(message, author):
+async def get_result(message, author, thread):
 #    char_greeting = f"{preprompts['char_name']}: {preprompts['char_greeting']}"
 #    example_dialogue = preprompts['example_dialogue'].replace("{{char}}", preprompts["char_name"])
 #    example_dialogue = example_dialogue.replace("{{user}}", "Question")
 #    context = f"{preprompts['char_persona']} \n{char_greeting} {example_dialogue} \nQuestion: {message} \n{preprompts['char_name']}:"
-    context = f"Below is an instruction that describes a task. Write a response that appropriately completes the request. \n### Human: {message}\n### Assistant:"
+    formated_thread = ""
+    #print(thread)
+    for message in thread:
+        bot_id = await get_user_id()
+        if message["user_id"] == bot_id:
+            formated_thread = formated_thread + "\n### Assistant: " + message["message"]
+        else:
+            formated_thread = formated_thread + "\n### Human: " + message["message"]
+    context = f"Below is an instruction that describes a task. Write a response that appropriately completes the request. {formated_thread}\n### Assistant:"
+    #print(context)
+
     async for response in run(context):
         # Print intermediate steps
         answer = response.replace(context, "", 1)
@@ -148,6 +181,7 @@ async def get_result(message, author):
         answer = answer.split("### Human")[0]
     if answer[0] == " ":
         answer = answer[1:]
+    #print(answer)
     return answer
 
 
