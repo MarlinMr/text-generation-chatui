@@ -4,4 +4,4 @@ Middle man for connecting chatstreams to [oobabooga/text-generation-webui](https
 
 # History
 
-![Proof]("https://raw.githubusercontent.com/MarlinMr/text-generation-chatui/main/Screenshot%20from%202023-04-17%2000-38-45.png" "Proof")
+[Proof](https://raw.githubusercontent.com/MarlinMr/text-generation-chatui/main/Screenshot%20from%202023-04-17%2000-38-45.png)
