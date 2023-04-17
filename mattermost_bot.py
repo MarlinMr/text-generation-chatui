@@ -85,16 +85,13 @@ async def handle_message(message_data):
     my_user_id = await get_user_id()
     if sender_id == my_user_id:
         return
-
     channel_id = message_data["channel_id"]
     message_text = message_data["message"]
     #print(message_data)
     if message_data["root_id"] == "":
         root_id = message_data["id"]
-        message_thread = await get_message(message_data["id"])
     else:
         root_id = message_data["root_id"]
-        message_thread = await get_message(message_data["root_id"])
 
     if message_text[0] == "€" or message_text[0] == "\\":
         command = message_text[1:].split()
@@ -196,11 +193,16 @@ async def handle_message(message_data):
             preprompts.pop(sender_id)
             with open("preprompt.json", 'w', encoding='utf8') as file:
                 json.dump(preprompts,file)
-
-
     else:
-        response_text = await get_result(message_text, sender_id, message_thread)
-        await send_message(channel_id, response_text, root_id)
+        if message_data["root_id"] == "":
+            if config["BOT_USERNAME"] in message_text:
+                message_thread = await get_message(message_data["id"])
+                response_text = await get_result(message_text, sender_id, message_thread)
+                await send_message(channel_id, response_text, root_id)
+        else:
+            message_thread = await get_message(message_data["root_id"])
+            response_text = await get_result(message_text, sender_id, message_thread)
+            await send_message(channel_id, response_text, root_id)
 
 async def run(context, sender_id):
     server = GPU_SERVER
@@ -252,6 +254,9 @@ async def get_result(message, author, thread):
         assistant_tag = preprompts["default"]["assistant_tag"]
         user_tag = preprompts["default"]["user_tag"]
         context = preprompts["default"]["context"]
+    if config["BOT_USERNAME"] in thread[0]["message"]:
+        if thread[0]["message"][:len(config["BOT_USERNAME"])] == config["BOT_USERNAME"]:
+            thread[0]["message"] = thread[0]["message"].replace(config["BOT_USERNAME"], "", 1)
     for message in thread:
         if message["user_id"] == bot_id:
             formated_thread = formated_thread + "\n" + assistant_tag + message["message"]
