@@ -1,0 +1,7 @@
+{
+"default":{
+    "assistant_tag":"### Assistant:",
+    "user_tag":"### Human:",
+    "context":"Below·is·an·instruction·that·describes·a·task.·Write·a·response·that·appropriately·completes·the·request."
+    }
+}
