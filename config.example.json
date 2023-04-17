@@ -2,5 +2,6 @@
 "MM_TOKEN":"",
 "MM_URL":"ws://localhost:8065",
 "GRADIO_FN":29,
-"CHANNEL_ID":""
+"CHANNEL_ID":"",
+"GPU_SERVER":""
 }
