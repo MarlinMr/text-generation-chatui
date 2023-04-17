@@ -138,30 +138,30 @@ async def run(context):
     async with websockets.connect(f"ws://{server}:7860/queue/join") as websocket:
         while content := json.loads(await websocket.recv()):
             # Python3.10 syntax, replace with if elif on older
-            msg = content["msg"]:
-                if msg == "send_hash":
-                    await websocket.send(json.dumps({
-                        "session_hash": session,
-                        "fn_index": GRADIO_FN
-                    }))
-                if msg == "estimation":
-                    pass
-                if msg == "send_data":
-                    await websocket.send(json.dumps({
-                        "session_hash": session,
-                        "fn_index": GRADIO_FN,
-                        "data": [
-                            payload
-                        ]
-                    }))
-                if msg == "process_starts":
-                    pass
-                if msg == "process_generating" or msg == "process_completed":
-                    yield content["output"]["data"][0]
-                    # You can search for your desired end indicator and
-                    #  stop generation by closing the websocket here
-                    if (content["msg"] == "process_completed"):
-                        break
+            msg = content["msg"]
+            if msg == "send_hash":
+                await websocket.send(json.dumps({
+                    "session_hash": session,
+                    "fn_index": GRADIO_FN
+                }))
+            if msg == "estimation":
+                pass
+            if msg == "send_data":
+                await websocket.send(json.dumps({
+                    "session_hash": session,
+                    "fn_index": GRADIO_FN,
+                    "data": [
+                        payload
+                    ]
+                }))
+            if msg == "process_starts":
+               pass
+            if msg == "process_generating" or msg == "process_completed":
+                yield content["output"]["data"][0]
+                # You can search for your desired end indicator and
+                #  stop generation by closing the websocket here
+                if (content["msg"] == "process_completed"):
+                    break
 
 #    greeting = "Hello there! How can I help you today? Do you have any questions or topics you'd like to discuss?"
 #    prompt = input("Prompt: ")
