@@ -163,8 +163,8 @@ async def get_result(message, author, thread):
 #    context = f"{preprompts['char_persona']} \n{char_greeting} {example_dialogue} \nQuestion: {message} \n{preprompts['char_name']}:"
     formated_thread = ""
     #print(thread)
+    bot_id = await get_user_id()
     for message in thread:
-        bot_id = await get_user_id()
         if message["user_id"] == bot_id:
             formated_thread = formated_thread + "\n### Assistant: " + message["message"]
         else:
