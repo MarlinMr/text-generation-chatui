@@ -35,6 +35,18 @@ async def get_user_id():
             user_data = await response.json()
             return user_data["id"]
 
+async def post_user_typing(channel_id, user_id):
+    headers = {
+        "Authorization": f"Bearer {MM_TOKEN}",
+        "Content-Type": "application/json",
+    }
+    data = {
+        "channel_id": channel_id,
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.post(f"{MM_URL}/api/v4/users/{channel_id}/typing", headers=headers, json=data) as response:
+            pass
+
 async def send_message(channel_id, message, root_id):
     headers = {
         "Authorization": f"Bearer {MM_TOKEN}",
@@ -174,6 +186,7 @@ async def get_result(message, author, thread):
         # Print intermediate steps
         answer = response.replace(context, "", 1)
         print(answer)
+        await post_user_typing(message["channel_id"], bot_id)
     if "### Human" in answer:
         answer = answer.split("### Human")[0]
     if answer[0] == " ":
