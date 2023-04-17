@@ -97,7 +97,8 @@ async def handle_message(message_data):
 
     if message_text[0] == "€" or message_text[0] == "\\":
         command = message_text[1:].split()
-        print(command)
+        if command[0] == "help":
+            await send_message(channel_id, f"`€set <parameter_name> <parameter_value> #sets <parameter_name> to <parameter_value>`\n`€get <parameter_name> #gets <value> of <parameter_name>`\n`€getparams #gets all params`\n`€set_assistant_tag <tag> #default = ### Assistant:`\n`€set_user_tag <tag> #default = ### Human:`\n`€set_context <context> #sets personal context`\n`€get_context #gets personal context`\n`€get_assistant_tag #gets personal assistant tag`\n`€get_user_tag #gets personal user tag`€default_prompts #resets prompts`", root_id)
         if command[0] == "set":
             print(command[0])
             if command[1] in params:
@@ -126,6 +127,59 @@ async def handle_message(message_data):
                 await send_message(channel_id, f"`{command[1]} == {params[command[1]]} {type(params[command[1]])}`",root_id)
         elif command[0] == "getparams":
             await send_message(channel_id, "`"+str(params)+"`", root_id)
+        elif command[0] == "get_assistant_tag":
+            if sender_id in preprompts:
+                await send_message(channel_id, "`"+str(preprompts[sender_id]["assistant_tag"])+"`", root_id)
+            else:
+                await send_message(channel_id, "`"+str(preprompts["default"]["assistant_tag"])+"`", root_id)
+        elif command[0] == "get_user_tag":
+            if sender_id in preprompts:
+                await send_message(channel_id, "`"+str(preprompts[sender_id]["user_tag"])+"`", root_id)
+            else:
+                await send_message(channel_id, "`"+str(preprompts["default"]["user_tag"])+"`", root_id)
+        elif command[0] == "get_context":
+            if sender_id in preprompts:
+                await send_message(channel_id, "`"+str(preprompts[sender_id]["context"])+"`", root_id)
+            else:
+                await send_message(channel_id, "`"+str(preprompts["default"]["context"])+"`", root_id)
+        elif command[0] == "set_assistant_tag":
+            if sender_id not in preprompts:
+                preprompts[sender_id] = {}
+                preprompts[sender_id]["assistant_tag"] = preprompts["default"]["assistant_tag"]
+                preprompts[sender_id]["user_tag"] = preprompts["default"]["user_tag"]
+                preprompts[sender_id]["context"] = preprompts["default"]["context"]
+            preprompts[sender_id]["assistant_tag"] = message_text[19:]
+            print(preprompts[sender_id])
+            print(preprompts)
+            with open("preprompt.json", 'w', encoding='utf8') as file:
+                json.dump(preprompts,file)
+        elif command[0] == "set_user_tag":
+            if sender_id not in preprompts:
+                preprompts[sender_id] = {}
+                preprompts[sender_id]["assistant_tag"] = preprompts["default"]["assistant_tag"]
+                preprompts[sender_id]["user_tag"] = preprompts["default"]["user_tag"]
+                preprompts[sender_id]["context"] = preprompts["default"]["context"]
+            preprompts[sender_id]["user_tag"] = message_text[13:]
+            print(preprompts[sender_id])
+            print(preprompts)
+            with open("preprompt.json", 'w', encoding='utf8') as file:
+                json.dump(preprompts,file)
+        elif command[0] == "set_context":
+            if sender_id not in preprompts:
+                preprompts[sender_id] = {}
+                preprompts[sender_id]["assistant_tag"] = preprompts["default"]["assistant_tag"]
+                preprompts[sender_id]["user_tag"] = preprompts["default"]["user_tag"]
+                preprompts[sender_id]["context"] = preprompts["default"]["context"]
+            preprompts[sender_id]["context"] = message_text[12:]
+            print(preprompts[sender_id])
+            print(preprompts)
+            with open("preprompt.json", 'w', encoding='utf8') as file:
+                json.dump(preprompts,file)
+        elif command[0] == "default_prompts":
+            preprompts.pop(sender_id)
+            with open("preprompt.json", 'w', encoding='utf8') as file:
+                json.dump(preprompts,file)
+
 
     else:
         response_text = await get_result(message_text, sender_id, message_thread)
@@ -163,32 +217,37 @@ async def run(context):
                 if (content["msg"] == "process_completed"):
                     break
 
-#    greeting = "Hello there! How can I help you today? Do you have any questions or topics you'd like to discuss?"
-#    prompt = input("Prompt: ")
-#    guide = f"Common sense question and answers \n Question: {prompt} Factual answer:"
-
-#
 async def get_result(message, author, thread):
 #    char_greeting = f"{preprompts['char_name']}: {preprompts['char_greeting']}"
 #    example_dialogue = preprompts['example_dialogue'].replace("{{char}}", preprompts["char_name"])
 #    example_dialogue = example_dialogue.replace("{{user}}", "Question")
 #    context = f"{preprompts['char_persona']} \n{char_greeting} {example_dialogue} \nQuestion: {message} \n{preprompts['char_name']}:"
     formated_thread = ""
-    #print(thread)
     bot_id = await get_user_id()
+    if author in preprompts:
+        assistant_tag = preprompts[author]["assistant_tag"]
+        user_tag = preprompts[author]["user_tag"]
+        context = preprompts[author]["context"]
+    else:
+        assistant_tag = preprompts["default"]["assistant_tag"]
+        user_tag = preprompts["default"]["user_tag"]
+        context = preprompts["default"]["context"]
     for message in thread:
         if message["user_id"] == bot_id:
-            formated_thread = formated_thread + "\n### Assistant: " + message["message"]
+            formated_thread = formated_thread + "\n" + assistant_tag + message["message"]
         else:
-            formated_thread = formated_thread + "\n### Human: " + message["message"]
-    context = f"Below is an instruction that describes a task. Write a response that appropriately completes the request. {formated_thread}\n### Assistant:"
-    async for response in run(context):
-        # Print intermediate steps
-        answer = response.replace(context, "", 1)
+            formated_thread = formated_thread + "\n" + user_tag + message["message"]
+    full_context = f"{context} {formated_thread}\n{assistant_tag}"
+    async for response in run(full_context):
+        answer = response.replace(full_context, "", 1)
         print(answer)
         await post_user_typing(message["channel_id"], bot_id)
-    if "### Human" in answer:
-        answer = answer.split("### Human")[0]
+    if str(user_tag) in answer:
+        answer = answer.split(user_tag)[0]
+    elif str(user_tag[:-1]) in answer:
+        answer = answer.split(user_tag[:-1])[0]
+    elif str(user_tag[:-2]) in answer:
+        answer = answer.split(user_tag[:-2])[0]
     if answer[0] == " ":
         answer = answer[1:]
     if "###" in answer:
