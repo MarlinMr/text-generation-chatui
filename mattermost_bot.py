@@ -18,6 +18,7 @@ preprompts = read_json("preprompt.json")
 MM_URL = config["MM_URL"]
 MM_TOKEN = config["MM_TOKEN"]
 MM_WEBSOCKET_URL = f"{MM_URL}/api/v4/websocket"
+GPU_SERVER = config["GPU_SERVER"]
 GRADIO_FN = config["GRADIO_FN"]
 
 def random_hash():
@@ -119,21 +120,21 @@ async def handle_message(message_data):
         await send_message(channel_id, response_text, root_id)
 
 async def run(context):
-    server = "localhost"
+    server = GPU_SERVER
     payload = json.dumps([context, params])
     session = random_hash()
     async with websockets.connect(f"ws://{server}:7860/queue/join") as websocket:
         while content := json.loads(await websocket.recv()):
             # Python3.10 syntax, replace with if elif on older
-            match content["msg"]:
-                case "send_hash":
+            msg = content["msg"]:
+                if msg == "send_hash":
                     await websocket.send(json.dumps({
                         "session_hash": session,
                         "fn_index": GRADIO_FN
                     }))
-                case "estimation":
+                if msg == "estimation":
                     pass
-                case "send_data":
+                if msg == "send_data":
                     await websocket.send(json.dumps({
                         "session_hash": session,
                         "fn_index": GRADIO_FN,
@@ -141,9 +142,9 @@ async def run(context):
                             payload
                         ]
                     }))
-                case "process_starts":
+                if msg == "process_starts":
                     pass
-                case "process_generating" | "process_completed":
+                if msg == "process_generating" or msg == "process_completed":
                     yield content["output"]["data"][0]
                     # You can search for your desired end indicator and
                     #  stop generation by closing the websocket here
@@ -169,19 +170,18 @@ async def get_result(message, author, thread):
         else:
             formated_thread = formated_thread + "\n### Human: " + message["message"]
     context = f"Below is an instruction that describes a task. Write a response that appropriately completes the request. {formated_thread}\n### Assistant:"
-    #print(context)
-
     async for response in run(context):
         # Print intermediate steps
         answer = response.replace(context, "", 1)
         print(answer)
-    # Print final result
-#    print(answer)
     if "### Human" in answer:
         answer = answer.split("### Human")[0]
     if answer[0] == " ":
         answer = answer[1:]
-    #print(answer)
+    if "###" in answer:
+        answer = answer.replace("#", "\#")
+    if len(answer) > 4000:
+        answer = answer[:4000]
     return answer
 
 
