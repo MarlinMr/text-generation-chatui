@@ -42,10 +42,10 @@ async def post_user_typing(channel_id, user_id):
         "Content-Type": "application/json",
     }
     data = {
-        "channel_id": channel_id,
+        "channel_id": f'{channel_id},
     }
     async with aiohttp.ClientSession() as session:
-        async with session.post(f"{MM_URL}/api/v4/users/{channel_id}/typing", headers=headers, json=data) as response:
+        async with session.post(f"{MM_URL}/api/v4/users/{user_id}/typing", headers=headers, json=data) as response:
             pass
 
 async def send_message(channel_id, message, root_id):
