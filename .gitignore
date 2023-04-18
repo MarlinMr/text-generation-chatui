@@ -1,2 +1,4 @@
 config.json
 *.swp
+preprompt.json
+preprompt.json.chatgpt
