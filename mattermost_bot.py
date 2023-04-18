@@ -275,6 +275,8 @@ async def get_result(message, author, thread):
         answer = answer.split(user_tag[:-2])[0]
     if answer[0] == " ":
         answer = answer[1:]
+    if answer[:-3] == "###":
+        answer = answer.replace("###", "")
     if "###" in answer:
         answer = answer.replace("#", "\#")
     if len(answer) > 4000:
