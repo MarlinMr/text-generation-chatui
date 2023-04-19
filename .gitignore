@@ -2,3 +2,4 @@ config.json
 *.swp
 preprompt.json
 preprompt.json.chatgpt
+__pycache__/
