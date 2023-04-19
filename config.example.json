@@ -1,7 +1,7 @@
 {
 "MM_TOKEN":"",
 "MM_URL":"ws://localhost:8065",
-"GRADIO_FN":29,
+"GRADIO_FN":34,
 "CHANNEL_ID":"",
 "GPU_SERVER":"",
 "BOT_USERNAME":""
