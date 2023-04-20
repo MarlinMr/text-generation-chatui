@@ -91,7 +91,7 @@ async def handle_message(message_data):
             command[i] = command[i].lower()
         if command[0] == "help":
             await send_message(channel_id, f"`€set <parameter_name> <parameter_value> #sets <parameter_name> to <parameter_value>`\n`€get <parameter_name> #gets <value> of <parameter_name>`\n`€getparams #gets all params`\n`€set_assistant_tag <tag> #default = ### Assistant:`\n`€set_user_tag <tag> #default = ### Human:`\n`€set_context <context> #sets personal context`\n`€get_context #gets personal context`\n`€get_assistant_tag #gets personal assistant tag`\n`€get_user_tag #gets personal user tag`\n`€reset_prompts`\n`€reset_params`", root_id)
-        if command[0] == "set":
+        if command[0] == "set" and len(command) == 3:
             if sender_id not in personal_params:
                 personal_params[sender_id] = params
             if command[1] in personal_params[sender_id]:
@@ -118,7 +118,7 @@ async def handle_message(message_data):
             personal_params.pop(sender_id)
             with open(personal_params_file, 'w', encoding='utf8') as file:
                 json.dump(personal_params,file)
-        elif command[0] == "get":
+        elif command[0] == "get" and len(command) == 2:
             if command[1] in params:
                 if sender_id in personal_params:
                     await send_message(channel_id, f"`{command[1]} == {personal_params[sender_id][command[1]]} {type(params[command[1]])}`",root_id)
@@ -144,7 +144,7 @@ async def handle_message(message_data):
                 await send_message(channel_id, "`"+str(preprompts[sender_id]["context"])+"`", root_id)
             else:
                 await send_message(channel_id, "`"+str(preprompts["default"]["context"])+"`", root_id)
-        elif command[0] == "set_assistant_tag":
+        elif command[0] == "set_assistant_tag" and len(command) == 2:
             if sender_id not in preprompts:
                 preprompts[sender_id] = {}
                 preprompts[sender_id]["assistant_tag"] = preprompts["default"]["assistant_tag"]
@@ -153,7 +153,7 @@ async def handle_message(message_data):
             preprompts[sender_id]["assistant_tag"] = message_text[19:]
             with open(preprompt_file, 'w', encoding='utf8') as file:
                 json.dump(preprompts,file)
-        elif command[0] == "set_user_tag":
+        elif command[0] == "set_user_tag" and len(command) == 2:
             if sender_id not in preprompts:
                 preprompts[sender_id] = {}
                 preprompts[sender_id]["assistant_tag"] = preprompts["default"]["assistant_tag"]
@@ -162,7 +162,7 @@ async def handle_message(message_data):
             preprompts[sender_id]["user_tag"] = message_text[13:]
             with open(preprompt_file, 'w', encoding='utf8') as file:
                 json.dump(preprompts,file)
-        elif command[0] == "set_context":
+        elif command[0] == "set_context" and len(command) == 2:
             if sender_id not in preprompts:
                 preprompts[sender_id] = {}
                 preprompts[sender_id]["assistant_tag"] = preprompts["default"]["assistant_tag"]
