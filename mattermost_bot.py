@@ -87,8 +87,8 @@ async def handle_message(message_data):
         root_id = message_data["root_id"]
     if message_text[0] == "€" or message_text[0] == "\\":
         command = message_text[1:].split()
-        command[0] = command[0].lower()
-        command[1] = command[0].lower()
+        for i in range(len(command)):
+            command[i] = command[i].lower()
         if command[0] == "help":
             await send_message(channel_id, f"`€set <parameter_name> <parameter_value> #sets <parameter_name> to <parameter_value>`\n`€get <parameter_name> #gets <value> of <parameter_name>`\n`€getparams #gets all params`\n`€set_assistant_tag <tag> #default = ### Assistant:`\n`€set_user_tag <tag> #default = ### Human:`\n`€set_context <context> #sets personal context`\n`€get_context #gets personal context`\n`€get_assistant_tag #gets personal assistant tag`\n`€get_user_tag #gets personal user tag`\n`€reset_prompts`\n`€reset_params`", root_id)
         if command[0] == "set":
